@@ -31,6 +31,18 @@
             <td><?= h($biditem->name) ?></td>
         </tr>
         <tr>
+            <th scope="row"><?= __('Image Path') ?></th>
+            <td><?= h($biditem->image_path) ?></td>
+        </tr>
+        <tr>
+            <th scope="row"><?= __('Description') ?></th>
+            <td><?= h($biditem->description) ?></td>
+        </tr>
+        <tr>
+            <th scope="row"><?= __('Bidinfo') ?></th>
+            <td><?= $biditem->has('bidinfo') ? $this->Html->link($biditem->bidinfo->id, ['controller' => 'Bidinfo', 'action' => 'view', $biditem->bidinfo->id]) : '' ?></td>
+        </tr>
+        <tr>
             <th scope="row"><?= __('Id') ?></th>
             <td><?= $this->Number->format($biditem->id) ?></td>
         </tr>
@@ -47,35 +59,6 @@
             <td><?= $biditem->finished ? __('Yes') : __('No'); ?></td>
         </tr>
     </table>
-    <div class="related">
-        <h4><?= __('Related Bidinfo') ?></h4>
-        <?php if (!empty($biditem->bidinfo)): ?>
-        <table cellpadding="0" cellspacing="0">
-            <tr>
-                <th scope="col"><?= __('Id') ?></th>
-                <th scope="col"><?= __('Biditem Id') ?></th>
-                <th scope="col"><?= __('User Id') ?></th>
-                <th scope="col"><?= __('Price') ?></th>
-                <th scope="col"><?= __('Created') ?></th>
-                <th scope="col" class="actions"><?= __('Actions') ?></th>
-            </tr>
-            <?php foreach ($biditem->bidinfo as $bidinfo): ?>
-            <tr>
-                <td><?= h($bidinfo->id) ?></td>
-                <td><?= h($bidinfo->biditem_id) ?></td>
-                <td><?= h($bidinfo->user_id) ?></td>
-                <td><?= h($bidinfo->price) ?></td>
-                <td><?= h($bidinfo->created) ?></td>
-                <td class="actions">
-                    <?= $this->Html->link(__('View'), ['controller' => 'Bidinfo', 'action' => 'view', $bidinfo->id]) ?>
-                    <?= $this->Html->link(__('Edit'), ['controller' => 'Bidinfo', 'action' => 'edit', $bidinfo->id]) ?>
-                    <?= $this->Form->postLink(__('Delete'), ['controller' => 'Bidinfo', 'action' => 'delete', $bidinfo->id], ['confirm' => __('Are you sure you want to delete # {0}?', $bidinfo->id)]) ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </table>
-        <?php endif; ?>
-    </div>
     <div class="related">
         <h4><?= __('Related Bidrequests') ?></h4>
         <?php if (!empty($biditem->bidrequests)): ?>

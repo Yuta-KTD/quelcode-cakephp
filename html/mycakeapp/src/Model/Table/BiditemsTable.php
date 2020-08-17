@@ -47,7 +47,7 @@ class BiditemsTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
         ]);
-        $this->hasOne('Bidinfo', [
+        $this->hasMany('Bidinfo', [
             'foreignKey' => 'biditem_id',
         ]);
         $this->hasMany('Bidrequests', [
@@ -83,8 +83,27 @@ class BiditemsTable extends Table
             ->requirePresence('endtime', 'create')
             ->notEmptyDateTime('endtime');
 
+        $validator
+            ->scalar('image_path')
+            ->maxLength('image_path', 255)
+            ->requirePresence('image_path', 'create')
+            ->notEmptyString('image_path')
+            ->add('image_path', 'custom', [
+                'rule' => function ($value, $context) {
+                    return (bool) preg_match('/\.jpeg\z|\.jpg\z|\.png\z|\.gif\z/i', $value);
+                },
+                'message' => 'ファイル形式が正しくありません。'
+            ]);
+
+        $validator
+            ->scalar('description')
+            ->maxLength('description', 1000)
+            ->requirePresence('description', 'create')
+            ->notEmptyString('description');
+
         return $validator;
     }
+
 
     /**
      * Returns a rules checker object that will be used for validating
