@@ -83,6 +83,7 @@ class BiditemsTable extends Table
             ->requirePresence('endtime', 'create')
             ->notEmptyDateTime('endtime');
 
+        //正規表現による画像ファイル形式のバリデーション
         $validator
             ->scalar('image_path')
             ->maxLength('image_path', 255)

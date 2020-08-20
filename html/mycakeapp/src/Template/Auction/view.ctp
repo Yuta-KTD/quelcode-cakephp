@@ -20,6 +20,7 @@
 		<th scope="row">投稿時間</th>
 		<td><?= h($biditem->created) ?></td>
 	</tr>
+	<!-- 商品詳細 -->
 	<tr>
 		<th scope="row">商品詳細</th>
 		<td>
@@ -41,6 +42,31 @@
 			endif;
 			?>
 		</td>
+	</tr>
+	<!-- 商品画像 -->
+	<tr>
+		<th scope="row">商品画像</th>
+		<td>
+			<?= $this->Html->image(
+				"Auction/" . pathinfo($biditem->image_path, PATHINFO_BASENAME),
+				array(
+					'width' => '100',
+					'height' => '100',
+					'alt' => h($biditem->name)
+				)
+			); ?>
+		</td>
+	</tr>
+	<!-- カウントダウンタイマー -->
+	<tr>
+		<th scope="row">終了まで</th>
+		<td id="result">
+			<script type="text/javascript">
+				var endDate = <?= json_encode($endDate, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+				var nowDate = <?= json_encode($nowDate, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+			</script>
+		</td>
+		<?= $this->Html->script('auction', array('inline' => false)); ?>
 	</tr>
 	<tr>
 		<th scope="row"><?= __('終了した？') ?></th>

@@ -73,6 +73,14 @@ class AuctionController extends AuctionBaseController
 			// Biditemのbidinfoに$bidinfoを設定
 			$biditem->bidinfo = $bidinfo;
 		}
+		//カウントダウンタイマー用の時刻を取得
+		$endTimeStamp = new \DateTimeImmutable($biditem->endtime);
+		$endDate = $endTimeStamp->getTimestamp();
+
+		$nowTimeStamp = new \DateTimeImmutable();
+		$nowDate = $nowTimeStamp->getTimestamp();
+		$this->set(compact('endDate', 'nowDate'));
+
 		// Bidrequestsからbiditem_idが$idのものを取得
 		$bidrequests = $this->Bidrequests->find('all', [
 			'conditions' => ['biditem_id' => $id],
@@ -86,18 +94,29 @@ class AuctionController extends AuctionBaseController
 	// 出品する処理
 	public function add()
 	{
+		//画像保存参考URL:https://qiita.com/kurosu93/items/239e14df7ea20091a53b
 		// Biditemインスタンスを用意
 		$biditem = $this->Biditems->newEntity();
 		// POST送信時の処理
 		if ($this->request->is('post')) {
-
-			// $biditemにフォームの送信内容を反映
-			$biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
+			//image_pathは配列なので先に取り出す。
+			$image_data = $this->request->getData('image_path');
+			//ファイル名のみ取得
+			$image_name = $image_data['name'];
+			// $biditemにフォームの送信内容を反映（image_pathは後で更新する）
+			$biditem = $this->Biditems->patchEntity($biditem, [
+				'user_id' => $this->request->getData('user_id'),
+				'name' => $this->request->getData('name'),
+				'endtime' => $this->request->getData('endtime'),
+				'finished' => $this->request->getData('finished'),
+				'description' => $this->request->getData('description'),
+				'image_path' => $image_name,
+			]);
 			// $biditemを保存する
 			if ($this->Biditems->save($biditem)) {
 				//画像保存名（ファイルパス)の作成
 				//画像拡張子のみを取得
-				$imageExtention = pathinfo($this->request->data['image_path'], PATHINFO_EXTENSION);
+				$imageExtention = pathinfo($image_name, PATHINFO_EXTENSION);
 				//保存先BiditemのID
 				$biditem_id = $biditem->id;
 				//webroot/img/Auctionからの絶対パスを取得 参考：https://blog.s-giken.net/323.html
@@ -109,7 +128,7 @@ class AuctionController extends AuctionBaseController
 				]);
 				$this->Biditems->save($data);
 				//画像をファイルに保存
-				move_uploaded_file($biditem['tmp_name'], $file_path);
+				move_uploaded_file($image_data['tmp_name'], $file_path);
 				// 成功時のメッセージ
 				$this->Flash->success(__('保存しました。'));
 				// トップページ（index）に移動

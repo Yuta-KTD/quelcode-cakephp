@@ -6,7 +6,6 @@
 			<th class="main" scope="col"><?= $this->Paginator->sort('name') ?></th>
 			<th scope="col"><?= $this->Paginator->sort('finished') ?></th>
 			<th scope="col"><?= $this->Paginator->sort('endtime') ?></th>
-			<th scope="col"><?= $this->Paginator->sort('image_path') ?></th>
 			<th scope="col" class="actions"><?= __('Actions') ?></th>
 		</tr>
 	</thead>
@@ -16,14 +15,6 @@
 				<td><?= h($biditem->name) ?></td>
 				<td><?= h($biditem->finished ? 'Finished' : '') ?></td>
 				<td><?= h($biditem->endtime) ?></td>
-				<td>
-					<?$this->Html->image($biditem->image_path,
-					array(
-					'width'=>'100',
-					'height'=>'100',
-					'alt'=>h($biditem->name)
-					)); ?>
-				</td>
 				<td class="actions">
 					<?= $this->Html->link(__('View'), ['action' => 'view', $biditem->id]) ?>
 				</td>
