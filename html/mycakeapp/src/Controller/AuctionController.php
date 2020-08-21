@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controller;
 
 use App\Controller\AppController;
@@ -33,8 +34,9 @@ class AuctionController extends AuctionBaseController
 	{
 		// ページネーションでBiditemsを取得
 		$auction = $this->paginate('Biditems', [
-			'order' =>['endtime'=>'desc'], 
-			'limit' => 10]);
+			'order' => ['endtime' => 'desc'],
+			'limit' => 10
+		]);
 		$this->set(compact('auction'));
 	}
 
@@ -56,11 +58,12 @@ class AuctionController extends AuctionBaseController
 			$bidinfo->biditem_id = $id;
 			// 最高金額のBidrequestを検索
 			$bidrequest = $this->Bidrequests->find('all', [
-				'conditions'=>['biditem_id'=>$id], 
+				'conditions' => ['biditem_id' => $id],
 				'contain' => ['Users'],
-				'order'=>['price'=>'desc']])->first();
+				'order' => ['price' => 'desc']
+			])->first();
 			// Bidrequestが得られた時の処理
-			if (!empty($bidrequest)){
+			if (!empty($bidrequest)) {
 				// Bidinfoの各種プロパティを設定して保存する
 				$bidinfo->user_id = $bidrequest->user->id;
 				$bidinfo->user = $bidrequest->user;
@@ -68,13 +71,22 @@ class AuctionController extends AuctionBaseController
 				$this->Bidinfo->save($bidinfo);
 			}
 			// Biditemのbidinfoに$bidinfoを設定
-			$biditem->bidinfo = $bidinfo;		
+			$biditem->bidinfo = $bidinfo;
 		}
+		//カウントダウンタイマー用の時刻を取得
+		$endTimeStamp = new \DateTimeImmutable($biditem->endtime);
+		$endDate = $endTimeStamp->getTimestamp();
+
+		$nowTimeStamp = new \DateTimeImmutable();
+		$nowDate = $nowTimeStamp->getTimestamp();
+		$this->set(compact('endDate', 'nowDate'));
+
 		// Bidrequestsからbiditem_idが$idのものを取得
 		$bidrequests = $this->Bidrequests->find('all', [
-			'conditions'=>['biditem_id'=>$id], 
+			'conditions' => ['biditem_id' => $id],
 			'contain' => ['Users'],
-			'order'=>['price'=>'desc']])->toArray();
+			'order' => ['price' => 'desc']
+		])->toArray();
 		// オブジェクト類をテンプレート用に設定
 		$this->set(compact('biditem', 'bidrequests'));
 	}
@@ -82,14 +94,41 @@ class AuctionController extends AuctionBaseController
 	// 出品する処理
 	public function add()
 	{
+		//画像保存参考URL:https://qiita.com/kurosu93/items/239e14df7ea20091a53b
 		// Biditemインスタンスを用意
 		$biditem = $this->Biditems->newEntity();
 		// POST送信時の処理
 		if ($this->request->is('post')) {
-			// $biditemにフォームの送信内容を反映
-			$biditem = $this->Biditems->patchEntity($biditem, $this->request->getData());
+			//image_pathは配列なので先に取り出す。
+			$image_data = $this->request->getData('image_path');
+			//ファイル名のみ取得
+			$image_name = $image_data['name'];
+			// $biditemにフォームの送信内容を反映（image_pathは後で更新する）
+			$biditem = $this->Biditems->patchEntity($biditem, [
+				'user_id' => $this->request->getData('user_id'),
+				'name' => $this->request->getData('name'),
+				'endtime' => $this->request->getData('endtime'),
+				'finished' => $this->request->getData('finished'),
+				'description' => $this->request->getData('description'),
+				'image_path' => $image_name,
+			]);
 			// $biditemを保存する
 			if ($this->Biditems->save($biditem)) {
+				//画像保存名（ファイルパス)の作成
+				//画像拡張子のみを取得
+				$imageExtention = pathinfo($image_name, PATHINFO_EXTENSION);
+				//保存先BiditemのID
+				$biditem_id = $biditem->id;
+				//webroot/img/Auctionからの絶対パスを取得 参考：https://blog.s-giken.net/323.html
+				$webroot_path = realpath(WWW_ROOT . "img/Auction");
+				$file_path = $webroot_path . "/" . $biditem_id . "." . $imageExtention;
+				//これをすでに一度保存したimage_pathに上書き
+				$data = $this->Biditems->patchEntity($biditem, [
+					'image_path' => $file_path
+				]);
+				$this->Biditems->save($data);
+				//画像をファイルに保存
+				move_uploaded_file($image_data['tmp_name'], $file_path);
 				// 成功時のメッセージ
 				$this->Flash->success(__('保存しました。'));
 				// トップページ（index）に移動
@@ -119,7 +158,7 @@ class AuctionController extends AuctionBaseController
 				// 成功時のメッセージ
 				$this->Flash->success(__('入札を送信しました。'));
 				// トップページにリダイレクト
-				return $this->redirect(['action'=>'view', $biditem_id]);
+				return $this->redirect(['action' => 'view', $biditem_id]);
 			}
 			// 失敗時のメッセージ
 			$this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
@@ -128,7 +167,7 @@ class AuctionController extends AuctionBaseController
 		$biditem = $this->Biditems->get($biditem_id);
 		$this->set(compact('bidrequest', 'biditem'));
 	}
-	
+
 	// 落札者とのメッセージ
 	public function msg($bidinfo_id = null)
 	{
@@ -146,15 +185,16 @@ class AuctionController extends AuctionBaseController
 			}
 		}
 		try { // $bidinfo_idからBidinfoを取得する
-			$bidinfo = $this->Bidinfo->get($bidinfo_id, ['contain'=>['Biditems']]);
-		} catch(Exception $e){
+			$bidinfo = $this->Bidinfo->get($bidinfo_id, ['contain' => ['Biditems']]);
+		} catch (Exception $e) {
 			$bidinfo = null;
 		}
 		// Bidmessageをbidinfo_idとuser_idで検索
-		$bidmsgs = $this->Bidmessages->find('all',[
-			'conditions'=>['bidinfo_id'=>$bidinfo_id],
+		$bidmsgs = $this->Bidmessages->find('all', [
+			'conditions' => ['bidinfo_id' => $bidinfo_id],
 			'contain' => ['Users'],
-			'order'=>['created'=>'desc']]);
+			'order' => ['created' => 'desc']
+		]);
 		$this->set(compact('bidmsgs', 'bidinfo', 'bidmsg'));
 	}
 
@@ -163,10 +203,11 @@ class AuctionController extends AuctionBaseController
 	{
 		// 自分が落札したBidinfoをページネーションで取得
 		$bidinfo = $this->paginate('Bidinfo', [
-			'conditions'=>['Bidinfo.user_id'=>$this->Auth->user('id')], 
+			'conditions' => ['Bidinfo.user_id' => $this->Auth->user('id')],
 			'contain' => ['Users', 'Biditems'],
-			'order'=>['created'=>'desc'],
-			'limit' => 10])->toArray();
+			'order' => ['created' => 'desc'],
+			'limit' => 10
+		])->toArray();
 		$this->set(compact('bidinfo'));
 	}
 
@@ -175,10 +216,11 @@ class AuctionController extends AuctionBaseController
 	{
 		// 自分が出品したBiditemをページネーションで取得
 		$biditems = $this->paginate('Biditems', [
-			'conditions'=>['Biditems.user_id'=>$this->Auth->user('id')], 
+			'conditions' => ['Biditems.user_id' => $this->Auth->user('id')],
 			'contain' => ['Users', 'Bidinfo'],
-			'order'=>['created'=>'desc'],
-			'limit' => 10])->toArray();
+			'order' => ['created' => 'desc'],
+			'limit' => 10
+		])->toArray();
 		$this->set(compact('biditems'));
 	}
 }

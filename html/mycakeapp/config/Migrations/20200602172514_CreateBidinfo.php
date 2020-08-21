@@ -1,4 +1,5 @@
 <?php
+
 use Migrations\AbstractMigration;
 
 class CreateBidinfo extends AbstractMigration
@@ -32,6 +33,7 @@ class CreateBidinfo extends AbstractMigration
             'default' => null,
             'null' => false,
         ]);
+
         $table->create();
     }
 }

@@ -27,6 +27,8 @@
                 <th scope="col"><?= $this->Paginator->sort('finished') ?></th>
                 <th scope="col"><?= $this->Paginator->sort('endtime') ?></th>
                 <th scope="col"><?= $this->Paginator->sort('created') ?></th>
+                <th scope="col"><?= $this->Paginator->sort('image_path') ?></th>
+                <th scope="col"><?= $this->Paginator->sort('description') ?></th>
                 <th scope="col" class="actions"><?= __('Actions') ?></th>
             </tr>
         </thead>
@@ -39,6 +41,8 @@
                 <td><?= h($biditem->finished) ?></td>
                 <td><?= h($biditem->endtime) ?></td>
                 <td><?= h($biditem->created) ?></td>
+                <td><?= h($biditem->image_path) ?></td>
+                <td><?= h($biditem->description) ?></td>
                 <td class="actions">
                     <?= $this->Html->link(__('View'), ['action' => 'view', $biditem->id]) ?>
                     <?= $this->Html->link(__('Edit'), ['action' => 'edit', $biditem->id]) ?>
