@@ -30,6 +30,8 @@ function countdownTimer() {
         document.getElementById('result').innerHTML = '終了しました。';
     }
 }
-setInterval("countdownTimer()", 1000);
+
+countdownTimer();
+setInterval(countdownTimer, 1000);
 
 
