@@ -223,4 +223,90 @@ class AuctionController extends AuctionBaseController
 		])->toArray();
 		$this->set(compact('biditems'));
 	}
+
+	//商品の発送に関するページ
+	public function sending($bidinfo_id = null)
+	{
+		$this->loadModel("Bidsendings");
+		// $idのBidinfoを取得
+		$bidinfo = $this->Bidinfo->get($bidinfo_id, [
+			'contain' => ['Users', 'Biditems', 'Biditems.Users', 'Bidsendings']
+		]);
+		$this->set(compact('bidinfo'));
+		//出品者または落札者でない時はindexページに戻るようアクセス制限をかける
+		//ログインユーザーのID
+		$login_user_id = $this->Auth->user('id');
+		//受け取るユーザー(落札者)のユーザーID
+		$receive_user_id = $bidinfo->user_id;
+		//出品者のユーザーID
+		$sent_user_id = $bidinfo->biditem->user_id;
+
+		$this->set(compact('login_user_id', 'receive_user_id', 'sent_user_id'));
+
+		if (!($login_user_id === $receive_user_id) && !($login_user_id === $sent_user_id)) {
+			//アクセス認証NGの場合
+			//メッセージ
+			$this->Flash->set(__('該当商品の出品者または落札者以外使用できないページです。'));
+			// トップページにリダイレクト
+			return $this->redirect(['action' => 'index']);
+		}
+		//発送に関する情報の登録
+		// Bidsendingインスタンスを用意
+
+
+		$bidsending_info = $bidinfo->bidsending;
+		// POST送信時の処理
+
+		//落札者の最初のフォーム登録
+		if (is_null($bidsending_info)) {
+			$bidsending = $this->Bidsendings->newEntity();
+			if ($this->request->is('post')) {
+				//$bidsendingに送信フォームの内容を反映する
+				$bidsending = $this->Bidsendings->patchEntity($bidsending, $this->request->getData());
+				// $bidsendingを保存する
+				if ($this->Bidsendings->save($bidsending)) {
+					//成功時メッセージ
+					$this->Flash->success(__('お客様情報を登録しました。出品者が送付するまでお待ちください。'));
+					// トップページ（index）に移動
+					return $this->redirect(['action' => 'index']);
+				}
+				// 失敗時のメッセージ
+				$this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+			}
+		} else {
+			$bidsending_info_id = $bidsending_info->id;
+			//$bidsendingに送信フォームの内容を反映するp175
+			$bidsending = $this->Bidsendings->get($bidsending_info_id);
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+				$bidsending_post = $this->request->getData();
+				//出品者の受取連絡
+				$bidsending = $this->Bidsendings->patchEntity($bidsending, $bidsending_post);
+				// $bidsendingを保存する
+				/*
+				try {
+					$this->Bidsendings->saveOrFail($bidsending);
+				} catch (\Cake\ORM\Exception\PersistenceFailedException $e) {
+					echo $e;
+					echo $e->getEntity();
+					return '500(Save Failed)';
+				}
+				return '200(Save Success)';
+				*/
+
+				if ($this->Bidsendings->save($bidsending)) {
+					//成功時メッセージ
+					$this->Flash->success(__('通知を受け付けました。'));
+					// トップページ（index）に移動
+					return $this->redirect(['action' => 'index']);
+				}
+				// 失敗時のメッセージ
+				$this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+			}
+		}
+
+
+
+
+		$this->set(compact('bidsending_info', 'bidsending'));
+	}
 }
