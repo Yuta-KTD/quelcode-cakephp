@@ -4,6 +4,9 @@ namespace App\Controller;
 
 use App\Controller\AppController;
 
+
+use Cake\Event\Event; // added.
+use Exception; // added.
 /**
  * Bidratings Controller
  *

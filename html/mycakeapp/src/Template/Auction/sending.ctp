@@ -61,6 +61,11 @@ if ($login_user_id === $receive_user_id) :
         elseif (($bidsending_info->is_sent) === true && ($bidsending_info->is_received) === true) :
         ?>
             <!-- 評価 -->
+            <?//= $this->Html->link(__('出品者評価'), ['action' => 'rating', $bidinfo->id]) ?>
+
+            <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">出品者評価</a>
+
+
         <?php endif; ?>
     <?php endif; ?>
 <?php
@@ -103,6 +108,9 @@ elseif ($login_user_id === $sent_user_id) :
     elseif (($bidsending_info->is_sent) === true && ($bidsending_info->is_received) === true) :
     ?>
         <!-- 評価ボタン -->
+        <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">落札者評価</a>
+        <?//= $this->Html->link(__('落札者評価'), ['action' => 'rating', $bidinfo->id]) ?>
+
     <?php
     endif;
     ?>
