@@ -1,9 +1,12 @@
 <h2>「<?= $bidinfo->biditem->name ?>」の配送・受取</h2>
 <?php
-//落札者のみに(出品者から見て)発送先入力フォーム表示
+//落札者の側の画面
 if ($login_user_id === $receive_user_id) :
 ?>
-    <?php if (is_null($bidsending_info)) : ?>
+    <?php
+    //受取先情報を入力するフォーム作成
+    if (is_null($bidsending_info)) :
+    ?>
         <?= $this->Form->create($bidsending) ?>
         <fieldset>
             <legend>※商品の受け取り先情報を入力：</legend>
@@ -22,7 +25,11 @@ if ($login_user_id === $receive_user_id) :
         </fieldset>
         <?= $this->Form->button(__('Submit', ['name' => 'save_all'])) ?>
         <?= $this->Form->end() ?>
-    <?php else : ?>
+    <?php
+    //受取先入力後の処理
+    else :
+    ?>
+        <!--配送先の表示-->
         <h3><?= $bidinfo->user->username . '様の配送先情報' ?></h3>
         <table class="vertical-table">
             <tr>
@@ -38,8 +45,8 @@ if ($login_user_id === $receive_user_id) :
                 <td><?= h($bidsending_info->phone_number) ?></td>
             </tr>
         </table>
-
         <?php
+        //受取完了ボタン入力画面
         if (($bidsending_info->is_sent) === true && ($bidsending_info->is_received) === false) :
         ?>
             <?= $this->Form->create($bidsending) ?>
@@ -51,26 +58,20 @@ if ($login_user_id === $receive_user_id) :
             echo $this->Form->hidden('phone_number', ['value' => $bidsending_info['phone_number']]);
             echo $this->Form->hidden('is_sent', ['value' => $bidsending_info['is_sent']]);
             echo '受取済みの場合はチェックをつけて「受取完了」ボタンを押してください。';
-
             echo $this->Form->control('is_received', ['value' => true]);
             ?>
             <?= $this->Form->button(__('受取完了')) ?>
             <?= $this->Form->end() ?>
-
         <?php
+        //受取完了後の取引相手評価フォーム表示
         elseif (($bidsending_info->is_sent) === true && ($bidsending_info->is_received) === true) :
         ?>
-            <!-- 評価 -->
-            <?//= $this->Html->link(__('出品者評価'), ['action' => 'rating', $bidinfo->id]) ?>
-
-            <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">出品者評価</a>
-
-
+            <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">[出品者を評価する]</a>
         <?php endif; ?>
     <?php endif; ?>
 <?php
+//出品者にのみ配送完了ボタンを表示
 elseif ($login_user_id === $sent_user_id) :
-    //出品者にのみ配送完了ボタンを表示
 ?>
     <h3><?= $bidinfo->user->username . '様の配送先情報' ?></h3>
     <table class="vertical-table">
@@ -87,8 +88,8 @@ elseif ($login_user_id === $sent_user_id) :
             <td><?= h($bidsending_info->phone_number) ?></td>
         </tr>
     </table>
-    <!-- 配送完了ボタン -->
     <?php
+    //配送完了ボタン入力画面
     if (($bidsending_info->is_sent) === false && ($bidsending_info->is_received) === false) :
     ?>
         <?= $this->Form->create($bidsending) ?>
@@ -105,12 +106,10 @@ elseif ($login_user_id === $sent_user_id) :
         <?= $this->Form->button(__('配送完了', ['name' => 'save_sent'])) ?>
         <?= $this->Form->end() ?>
     <?php
+    //評価画面へ
     elseif (($bidsending_info->is_sent) === true && ($bidsending_info->is_received) === true) :
     ?>
-        <!-- 評価ボタン -->
-        <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">落札者評価</a>
-        <?//= $this->Html->link(__('落札者評価'), ['action' => 'rating', $bidinfo->id]) ?>
-
+        <a href="<?= $this->Url->build(['controller' => 'Bidratings', 'action' => 'add', $bidinfo->id]); ?>">[落札者を評価する]</a>
     <?php
     endif;
     ?>

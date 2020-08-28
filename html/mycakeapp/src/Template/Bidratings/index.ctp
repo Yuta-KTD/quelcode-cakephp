@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Bidrating[]|\Cake\Collection\CollectionInterface $bidratings
@@ -30,21 +31,21 @@
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($bidratings as $bidrating): ?>
-            <tr>
-                <td><?= $this->Number->format($bidrating->id) ?></td>
-                <td><?= $bidrating->has('bidinfo') ? $this->Html->link($bidrating->bidinfo->id, ['controller' => 'Bidinfo', 'action' => 'view', $bidrating->bidinfo->id]) : '' ?></td>
-                <td><?= $this->Number->format($bidrating->rate_user_id) ?></td>
-                <td><?= $bidrating->has('user') ? $this->Html->link($bidrating->user->id, ['controller' => 'Users', 'action' => 'view', $bidrating->user->id]) : '' ?></td>
-                <td><?= $this->Number->format($bidrating->rating) ?></td>
-                <td><?= h($bidrating->comment) ?></td>
-                <td><?= h($bidrating->created) ?></td>
-                <td class="actions">
-                    <?= $this->Html->link(__('View'), ['action' => 'view', $bidrating->id]) ?>
-                    <?= $this->Html->link(__('Edit'), ['action' => 'edit', $bidrating->id]) ?>
-                    <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $bidrating->id], ['confirm' => __('Are you sure you want to delete # {0}?', $bidrating->id)]) ?>
-                </td>
-            </tr>
+            <?php foreach ($bidratings as $bidrating) : ?>
+                <tr>
+                    <td><?= $this->Number->format($bidrating->id) ?></td>
+                    <td><?= $bidrating->has('bidinfo') ? $this->Html->link($bidrating->bidinfo->id, ['controller' => 'Bidinfo', 'action' => 'view', $bidrating->bidinfo->id]) : '' ?></td>
+                    <td><?= $this->Number->format($bidrating->rate_user_id) ?></td>
+                    <td><?= $bidrating->has('user') ? $this->Html->link($bidrating->user->id, ['controller' => 'Users', 'action' => 'view', $bidrating->user->id]) : '' ?></td>
+                    <td><?= $this->Number->format($bidrating->rating) ?></td>
+                    <td><?= h($bidrating->comment) ?></td>
+                    <td><?= h($bidrating->created) ?></td>
+                    <td class="actions">
+                        <?= $this->Html->link(__('View'), ['action' => 'view', $bidrating->id]) ?>
+                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $bidrating->id]) ?>
+                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $bidrating->id], ['confirm' => __('Are you sure you want to delete # {0}?', $bidrating->id)]) ?>
+                    </td>
+                </tr>
             <?php endforeach; ?>
         </tbody>
     </table>

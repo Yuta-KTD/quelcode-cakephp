@@ -23,6 +23,9 @@ class AuctionController extends AuctionBaseController
 		$this->loadModel('Bidrequests');
 		$this->loadModel('Bidinfo');
 		$this->loadModel('Bidmessages');
+		//追加モデル
+		$this->loadModel("Bidsendings");
+		$this->loadModel("Bidratings");
 		// ログインしているユーザー情報をauthuserに設定
 		$this->set('authuser', $this->Auth->user());
 		// レイアウトをauctionに変更
@@ -32,12 +35,35 @@ class AuctionController extends AuctionBaseController
 	// トップページ
 	public function index()
 	{
-		// ページネーションでBiditemsを取得
+		// ページネーションでBiditems,Bidratingsを取得
 		$auction = $this->paginate('Biditems', [
 			'order' => ['endtime' => 'desc'],
 			'limit' => 10
 		]);
-		$this->set(compact('auction'));
+		$bidratings_paginate = $this->paginate('Bidratings', [
+			'conditions' => ['Bidratings.is_rated_user_id' => $this->Auth->user('id')],
+			'contain' => [
+				'Bidinfo',
+				'Bidinfo.Biditems',
+				'RateUsers',
+				'IsRatedUsers',
+			],
+			'order' => ['created' => 'desc'],
+			'limit' => 10
+		])->toArray();
+		//評価平均点を作成
+		$bidratings = $this->Bidratings->find('all', [
+			'conditions' => ['Bidratings.is_rated_user_id' => $this->Auth->user('id')],
+		])->toArray();
+		$bidrates = array_column($bidratings, 'rating');
+		$bidrate_count = count($bidrates);
+		$bidrate_sum = array_sum($bidrates);
+		if ($bidrate_sum === 0) {
+			$bidrate_average = null;
+		} else {
+			$bidrate_average = round($bidrate_sum / $bidrate_count, 1);
+		}
+		$this->set(compact('auction', 'bidratings_paginate', 'bidrate_average'));
 	}
 
 	// 商品情報の表示
@@ -225,9 +251,8 @@ class AuctionController extends AuctionBaseController
 	}
 
 	//商品の発送に関するページ
-	public function sending($bidinfo_id = null)
+	public function sending($bidinfo_id)
 	{
-		$this->loadModel("Bidsendings");
 		// $idのBidinfoを取得
 		$bidinfo = $this->Bidinfo->get($bidinfo_id, [
 			'contain' => ['Users', 'Biditems', 'Biditems.Users', 'Bidsendings']
@@ -240,7 +265,6 @@ class AuctionController extends AuctionBaseController
 		$receive_user_id = $bidinfo->user_id;
 		//出品者のユーザーID
 		$sent_user_id = $bidinfo->biditem->user_id;
-
 		$this->set(compact('login_user_id', 'receive_user_id', 'sent_user_id'));
 
 		if (!($login_user_id === $receive_user_id) && !($login_user_id === $sent_user_id)) {
@@ -252,11 +276,7 @@ class AuctionController extends AuctionBaseController
 		}
 		//発送に関する情報の登録
 		// Bidsendingインスタンスを用意
-
-
 		$bidsending_info = $bidinfo->bidsending;
-		// POST送信時の処理
-
 		//落札者の最初のフォーム登録
 		if (is_null($bidsending_info)) {
 			$bidsending = $this->Bidsendings->newEntity();
@@ -281,18 +301,6 @@ class AuctionController extends AuctionBaseController
 				$bidsending_post = $this->request->getData();
 				//出品者の受取連絡
 				$bidsending = $this->Bidsendings->patchEntity($bidsending, $bidsending_post);
-				// $bidsendingを保存する
-				/*
-				try {
-					$this->Bidsendings->saveOrFail($bidsending);
-				} catch (\Cake\ORM\Exception\PersistenceFailedException $e) {
-					echo $e;
-					echo $e->getEntity();
-					return '500(Save Failed)';
-				}
-				return '200(Save Success)';
-				*/
-
 				if ($this->Bidsendings->save($bidsending)) {
 					//成功時メッセージ
 					$this->Flash->success(__('通知を受け付けました。'));
@@ -303,10 +311,6 @@ class AuctionController extends AuctionBaseController
 				$this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
 			}
 		}
-
-
-
-
 		$this->set(compact('bidsending_info', 'bidsending'));
 	}
 }

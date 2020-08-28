@@ -47,11 +47,13 @@ class BidratingsTable extends Table
             'foreignKey' => 'bidinfo_id',
             'joinType' => 'INNER',
         ]);
-        $this->belongsTo('Users', [
+        $this->belongsTo('RateUsers', [
+            'className' => 'Users',
             'foreignKey' => 'rate_user_id',
             'joinType' => 'INNER',
         ]);
-        $this->belongsTo('Users', [
+        $this->belongsTo('IsRatedUsers', [
+            'className' => 'Users',
             'foreignKey' => 'is_rated_user_id',
             'joinType' => 'INNER',
         ]);
@@ -99,8 +101,8 @@ class BidratingsTable extends Table
     public function buildRules(RulesChecker $rules)
     {
         $rules->add($rules->existsIn(['bidinfo_id'], 'Bidinfo'));
-        $rules->add($rules->existsIn(['rate_user_id'], 'Users'));
-        $rules->add($rules->existsIn(['is_rated_user_id'], 'Users'));
+        $rules->add($rules->existsIn(['rate_user_id'], 'RateUsers'));
+        $rules->add($rules->existsIn(['is_rated_user_id'], 'IsRatedUsers'));
 
         return $rules;
     }
