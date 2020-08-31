@@ -78,7 +78,17 @@ class BidratingsController extends AuctionBaseController
      */
     public function add($bidinfo_id)
     {
-
+        try { // $biditem_idの$biditemを取得する
+            $bidinfo = $this->Bidinfo->get($bidinfo_id, [
+                'contain' => ['Users', 'Biditems', 'Biditems.Users']
+            ]);
+        } catch (Exception $e) {
+            $this->Flash->set(__('落札情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+            return $this->redirect([
+                'controller' => 'Auction',
+                'action' => 'index'
+            ]);
+        }
 
         //$bidinfo_idのBidinfoを取得
         $bidinfo = $this->Bidinfo->get($bidinfo_id, [

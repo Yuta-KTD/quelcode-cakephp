@@ -67,12 +67,17 @@ class AuctionController extends AuctionBaseController
 	}
 
 	// 商品情報の表示
-	public function view($id = null)
+	public function view($id)
 	{
 		// $idのBiditemを取得
-		$biditem = $this->Biditems->get($id, [
-			'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
-		]);
+		try { // $biditem_idの$biditemを取得する
+			$biditem = $this->Biditems->get($id, [
+				'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
+			]);
+		} catch (Exception $e) {
+			$this->Flash->set(__('商品情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
 		// オークション終了時の処理
 		if ($biditem->endtime < new \DateTime('now') and $biditem->finished == 0) {
 			// finishedを1に変更して保存
@@ -168,8 +173,9 @@ class AuctionController extends AuctionBaseController
 	}
 
 	// 入札の処理
-	public function bid($biditem_id = null)
+	public function bid($biditem_id)
 	{
+
 		// 入札用のBidrequestインスタンスを用意
 		$bidrequest = $this->Bidrequests->newEntity();
 		// $bidrequestにbiditem_idとuser_idを設定
@@ -189,13 +195,19 @@ class AuctionController extends AuctionBaseController
 			// 失敗時のメッセージ
 			$this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
 		}
+		//urlパラメタを不正に入力された際の処理
+		try { // $biditem_idの$biditemを取得する
+			$biditem = $this->Biditems->get($biditem_id);
+		} catch (Exception $e) {
+			$this->Flash->set(__('商品情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
 		// $biditem_idの$biditemを取得する
 		$biditem = $this->Biditems->get($biditem_id);
 		$this->set(compact('bidrequest', 'biditem'));
 	}
-
 	// 落札者とのメッセージ
-	public function msg($bidinfo_id = null)
+	public function msg($bidinfo_id)
 	{
 		// Bidmessageを新たに用意
 		$bidmsg = $this->Bidmessages->newEntity();
@@ -253,10 +265,15 @@ class AuctionController extends AuctionBaseController
 	//商品の発送に関するページ
 	public function sending($bidinfo_id)
 	{
-		// $idのBidinfoを取得
-		$bidinfo = $this->Bidinfo->get($bidinfo_id, [
-			'contain' => ['Users', 'Biditems', 'Biditems.Users', 'Bidsendings']
-		]);
+		//urlパラメタを不正に入力された際の処理
+		try { // $bidinfo_idからBidinfoを取得する
+			$bidinfo = $this->Bidinfo->get($bidinfo_id, [
+				'contain' => ['Users', 'Biditems', 'Biditems.Users', 'Bidsendings']
+			]);
+		} catch (Exception $e) {
+			$this->Flash->set(__('落札情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
 		$this->set(compact('bidinfo'));
 		//出品者または落札者でない時はindexページに戻るようアクセス制限をかける
 		//ログインユーザーのID
@@ -267,7 +284,7 @@ class AuctionController extends AuctionBaseController
 		$sent_user_id = $bidinfo->biditem->user_id;
 		$this->set(compact('login_user_id', 'receive_user_id', 'sent_user_id'));
 
-		if (!($login_user_id === $receive_user_id) && !($login_user_id === $sent_user_id)) {
+		if (($login_user_id !== $receive_user_id) && ($login_user_id !== $sent_user_id)) {
 			//アクセス認証NGの場合
 			//メッセージ
 			$this->Flash->set(__('該当商品の出品者または落札者以外使用できないページです。'));
