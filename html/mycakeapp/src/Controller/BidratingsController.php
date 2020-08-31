@@ -29,9 +29,7 @@ class BidratingsController extends AuctionBaseController
         // 必要なモデルをすべてロード
         $this->loadModel('Users');
         $this->loadModel('Biditems');
-        //$this->loadModel('Bidrequests');
         $this->loadModel('Bidinfo');
-        //$this->loadModel('Bidmessages');
         //追加モデル
         $this->loadModel("Bidsendings");
         $this->loadModel("Bidratings");
@@ -99,7 +97,7 @@ class BidratingsController extends AuctionBaseController
             if ($bidinfo_id === $bidinfo->id) {
                 //メッセージ
                 $this->Flash->set(__('本取引の評価は入力済みです。'));
-                // トップページにリダイレクト
+                // 元いたページにリダイレクト
                 return $this->redirect($this->request->referer());
             }
         }
