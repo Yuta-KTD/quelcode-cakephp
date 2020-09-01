@@ -23,6 +23,9 @@ class AuctionController extends AuctionBaseController
 		$this->loadModel('Bidrequests');
 		$this->loadModel('Bidinfo');
 		$this->loadModel('Bidmessages');
+		//追加モデル
+		$this->loadModel("Bidsendings");
+		$this->loadModel("Bidratings");
 		// ログインしているユーザー情報をauthuserに設定
 		$this->set('authuser', $this->Auth->user());
 		// レイアウトをauctionに変更
@@ -32,21 +35,49 @@ class AuctionController extends AuctionBaseController
 	// トップページ
 	public function index()
 	{
-		// ページネーションでBiditemsを取得
+		// ページネーションでBiditems,Bidratingsを取得
 		$auction = $this->paginate('Biditems', [
 			'order' => ['endtime' => 'desc'],
 			'limit' => 10
 		]);
-		$this->set(compact('auction'));
+		$bidratings_paginate = $this->paginate('Bidratings', [
+			'conditions' => ['Bidratings.is_rated_user_id' => $this->Auth->user('id')],
+			'contain' => [
+				'Bidinfo',
+				'Bidinfo.Biditems',
+				'RateUsers',
+				'IsRatedUsers',
+			],
+			'order' => ['created' => 'desc'],
+			'limit' => 10
+		])->toArray();
+		//評価平均点を作成
+		$bidratings = $this->Bidratings->find('all', [
+			'conditions' => ['Bidratings.is_rated_user_id' => $this->Auth->user('id')],
+		])->toArray();
+		$bidrates = array_column($bidratings, 'rating');
+		$bidrate_count = count($bidrates);
+		$bidrate_sum = array_sum($bidrates);
+		if ($bidrate_sum === 0) {
+			$bidrate_average = null;
+		} else {
+			$bidrate_average = round($bidrate_sum / $bidrate_count, 1);
+		}
+		$this->set(compact('auction', 'bidratings_paginate', 'bidrate_average'));
 	}
 
 	// 商品情報の表示
-	public function view($id = null)
+	public function view($id)
 	{
 		// $idのBiditemを取得
-		$biditem = $this->Biditems->get($id, [
-			'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
-		]);
+		try { // $biditem_idの$biditemを取得する
+			$biditem = $this->Biditems->get($id, [
+				'contain' => ['Users', 'Bidinfo', 'Bidinfo.Users']
+			]);
+		} catch (Exception $e) {
+			$this->Flash->set(__('商品情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
 		// オークション終了時の処理
 		if ($biditem->endtime < new \DateTime('now') and $biditem->finished == 0) {
 			// finishedを1に変更して保存
@@ -142,8 +173,9 @@ class AuctionController extends AuctionBaseController
 	}
 
 	// 入札の処理
-	public function bid($biditem_id = null)
+	public function bid($biditem_id)
 	{
+
 		// 入札用のBidrequestインスタンスを用意
 		$bidrequest = $this->Bidrequests->newEntity();
 		// $bidrequestにbiditem_idとuser_idを設定
@@ -163,13 +195,19 @@ class AuctionController extends AuctionBaseController
 			// 失敗時のメッセージ
 			$this->Flash->error(__('入札に失敗しました。もう一度入力下さい。'));
 		}
+		//urlパラメタを不正に入力された際の処理
+		try { // $biditem_idの$biditemを取得する
+			$biditem = $this->Biditems->get($biditem_id);
+		} catch (Exception $e) {
+			$this->Flash->set(__('商品情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
 		// $biditem_idの$biditemを取得する
 		$biditem = $this->Biditems->get($biditem_id);
 		$this->set(compact('bidrequest', 'biditem'));
 	}
-
 	// 落札者とのメッセージ
-	public function msg($bidinfo_id = null)
+	public function msg($bidinfo_id)
 	{
 		// Bidmessageを新たに用意
 		$bidmsg = $this->Bidmessages->newEntity();
@@ -222,5 +260,74 @@ class AuctionController extends AuctionBaseController
 			'limit' => 10
 		])->toArray();
 		$this->set(compact('biditems'));
+	}
+
+	//商品の発送に関するページ
+	public function sending($bidinfo_id)
+	{
+		//urlパラメタを不正に入力された際の処理
+		try { // $bidinfo_idからBidinfoを取得する
+			$bidinfo = $this->Bidinfo->get($bidinfo_id, [
+				'contain' => ['Users', 'Biditems', 'Biditems.Users', 'Bidsendings']
+			]);
+		} catch (Exception $e) {
+			$this->Flash->set(__('落札情報のないページにアクセスしようとしたため、トップページへ移行しました。'));
+			return $this->redirect(['action' => 'index']);
+		}
+		$this->set(compact('bidinfo'));
+		//出品者または落札者でない時はindexページに戻るようアクセス制限をかける
+		//ログインユーザーのID
+		$login_user_id = $this->Auth->user('id');
+		//受け取るユーザー(落札者)のユーザーID
+		$receive_user_id = $bidinfo->user_id;
+		//出品者のユーザーID
+		$sent_user_id = $bidinfo->biditem->user_id;
+		$this->set(compact('login_user_id', 'receive_user_id', 'sent_user_id'));
+
+		if (($login_user_id !== $receive_user_id) && ($login_user_id !== $sent_user_id)) {
+			//アクセス認証NGの場合
+			//メッセージ
+			$this->Flash->set(__('該当商品の出品者または落札者以外使用できないページです。'));
+			// トップページにリダイレクト
+			return $this->redirect(['action' => 'index']);
+		}
+		//発送に関する情報の登録
+		// Bidsendingインスタンスを用意
+		$bidsending_info = $bidinfo->bidsending;
+		//落札者の最初のフォーム登録
+		if (is_null($bidsending_info)) {
+			$bidsending = $this->Bidsendings->newEntity();
+			if ($this->request->is('post')) {
+				//$bidsendingに送信フォームの内容を反映する
+				$bidsending = $this->Bidsendings->patchEntity($bidsending, $this->request->getData());
+				// $bidsendingを保存する
+				if ($this->Bidsendings->save($bidsending)) {
+					//成功時メッセージ
+					$this->Flash->success(__('お客様情報を登録しました。出品者が送付するまでお待ちください。'));
+					// トップページ（index）に移動
+					return $this->redirect(['action' => 'index']);
+				}
+				// 失敗時のメッセージ
+				$this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+			}
+		} else {
+			$bidsending_info_id = $bidsending_info->id;
+			//$bidsendingに送信フォームの内容を反映するp175
+			$bidsending = $this->Bidsendings->get($bidsending_info_id);
+			if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+				$bidsending_post = $this->request->getData();
+				//出品者の受取連絡
+				$bidsending = $this->Bidsendings->patchEntity($bidsending, $bidsending_post);
+				if ($this->Bidsendings->save($bidsending)) {
+					//成功時メッセージ
+					$this->Flash->success(__('通知を受け付けました。'));
+					// トップページ（index）に移動
+					return $this->redirect(['action' => 'index']);
+				}
+				// 失敗時のメッセージ
+				$this->Flash->error(__('保存に失敗しました。もう一度入力下さい。'));
+			}
+		}
+		$this->set(compact('bidsending_info', 'bidsending'));
 	}
 }

@@ -1,23 +1,23 @@
 <?php
-
 namespace App\Model\Entity;
 
 use Cake\ORM\Entity;
 
 /**
- * Bidinfo Entity
+ * Bidsending Entity
  *
  * @property int $id
- * @property int $biditem_id
- * @property int $user_id
- * @property int $price
+ * @property int $bidinfo_id
+ * @property string $name
+ * @property string $address
+ * @property string $phone_number
+ * @property bool $is_sent
+ * @property bool $is_received
  * @property \Cake\I18n\Time $created
  *
- * @property \App\Model\Entity\Biditem $biditem
- * @property \App\Model\Entity\User $user
- * @property \App\Model\Entity\Bidmessage[] $bidmessages
+ * @property \App\Model\Entity\Bidinfo $bidinfo
  */
-class Bidinfo extends Entity
+class Bidsending extends Entity
 {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
@@ -29,14 +29,13 @@ class Bidinfo extends Entity
      * @var array
      */
     protected $_accessible = [
-        'biditem_id' => true,
-        'user_id' => true,
-        'price' => true,
+        'bidinfo_id' => true,
+        'name' => true,
+        'address' => true,
+        'phone_number' => true,
+        'is_sent' => true,
+        'is_received' => true,
         'created' => true,
-        'biditem' => true,
-        'user' => true,
-        'bidmessages' => true,
-        'bidsending' => true,
-        'bidrating' => true,
+        'bidinfo' => true,
     ];
 }

@@ -21,7 +21,6 @@ use Cake\Auth\DefaultPasswordHasher;
  */
 class User extends Entity
 {
-
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -39,6 +38,7 @@ class User extends Entity
         'biditems' => true,
         'bidmessages' => true,
         'bidrequests' => true,
+        'bidrating' => true,
     ];
 
     /**

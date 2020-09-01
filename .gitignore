@@ -2,3 +2,6 @@ docker/mysql/data
 phpmyadmin
 .env
 .vscode
+html/mycakeapp/webroot/img/Auction/*
+!html/mycakeapp/webroot/img/Auction/.gitkeep
+
